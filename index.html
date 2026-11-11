@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT - Bahasa Arab Kelas VIII</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        arabic: ['"Amiri"', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Anti-Cheat: Mencegah seleksi teks */
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        /* Style scrollbar custom */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // ==========================================
+        // KONFIGURASI UJIAN
+        // ==========================================
+        const GOOGLE_SHEETS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzX7ZM1B8Aj4FX87LM1uwJrzOq1iEpFWARy7V5qkvDYwybuRQ7n5TVVIg_kVnu6l_mI/exec";
+        
+        const EXAM_CONFIG = {
+            mapel: "BAHASA ARAB",
+            jenisUjian: "SUMATIF AKHIR SEMESTER (SAS) 2026/2027",
+            kelas: "VIII",
+            durasiMenit: 60,
+            storageKey: "cbt_BAHASA_ARAB_VIII"
+        };
+
+        // ==========================================
+        // DATA SOAL (Berdasarkan Ekstraksi PDF)
+        // ==========================================
+        const rawQuestionsData = [
+            { id: 1, type: 'mc', text: 'مَا مَعْنَى غُرْفَةُ الْمُدَرِّسِينَ فِي اللُّغَةِ الْإِنْدُونِيسِيَّةِ؟', options: [{id: 'A', text: 'Ruang Kepala Sekolah'}, {id: 'B', text: 'Ruang Guru'}, {id: 'C', text: 'Ruang Tata Usaha'}, {id: 'D', text: 'Ruang Kesehatan (UKS)'}], answer: 'B' },
+            { id: 2, type: 'mc', text: 'ضِدُّ كَلِمَةِ "كَبِيرٌ" فِي اللُّغَةِ الْعَرَبِيَّةِ هُوَ...', options: [{id: 'A', text: 'وَاسِعٌ'}, {id: 'B', text: 'كَثِيرٌ'}, {id: 'C', text: 'جَمِيلٌ'}, {id: 'D', text: 'صَغِيرٌ'}], answer: 'D' },
+            { id: 3, type: 'mc', text: 'Bacalah teks berikut dengan cermat!\nهَذِهِ مَدْرَسَتِي الْمَدْرَسَةُ الْمُتَوَسِّطَةُ الْحُكُومِيَّةُ ١ بِمَدِينَةِ مَالَانْجِ مَدْرَسَتِي كَبِيرَةٌ وَوَاسِعَةً وَجَمِيلَةً، وَهِيَ قَرِيبَةً مِنَ الْمَسْجِدِ الْكَبِيرِ "الْفَلَاحِ". تَقَعُ مَدْرَسَتِي فِي شَارِعِ بَانُدُونَج رَقْم ۷ بِمَدِينَةِ مَا لَانْجِ.\nأَيْنَ تَقَعُ مَدْرَسَةُ خَدِيجَةَ بِنَاءً عَلَى النَّصَّ السَّابِقِ؟', options: [{id: 'A', text: 'فِي شَارِعِ بَانُدُونَج رَقْم ٧'}, {id: 'B', text: 'فِي شَارِعِ سُوكَابُومِي رَقْم ٥'}, {id: 'C', text: 'فِي شَارِعِ جَاكَرْتَا رَقْم ١'}, {id: 'D', text: 'فِي شَارِعِ سُورَابَايَا رَقْم ٣'}], answer: 'A' },
+            { id: 4, type: 'mc', text: 'Berdasarkan teks pada soal nomor 3:\nكَيْفَ صِفَةُ الْمَدْرَسَةِ فِي النَّصَّ السَّابِقِ ؟', options: [{id: 'A', text: 'صَغِيرَةٌ وَضَيِّقَةٌ'}, {id: 'B', text: 'كَبِيرَةٌ وَوَاسِعَةٌ وَجَمِيلَةٌ'}, {id: 'C', text: 'قَدِيمَةٌ وَمُتَّسِخَةٌ'}, {id: 'D', text: 'بَعِيدَةٌ وَصَغِيرَةٌ'}], answer: 'B' },
+            { id: 5, type: 'mc', text: 'Bacalah teks cerita berikut dengan cermat!\nغُرْفَةُ رَئِيسِ الْمَدْرَسَةِ وَسَطَ الْمَدْرَسَةِ، وَهِيَ بَيْنَ غُرْفَةِ الْمُدَرِّسِينَ وَغُرْفَةِ الشُّؤُونِ الْإِدَارِيَّةِ. وَالْفَضْلُ السَّابِعُ فِي الطَّابَقِ السُّفْلِي، وَالْفَضْلُ الثَّامِنُ وَالتَّاسِعُ فِي الطَّابَقِ الْعُلْوِي.\nأَيْنَ يَقَعُ الْفَضْلُ الثَّامِنُ وَالتَّاسِعُ بِنَاءً عَلَى النَّصَّ السَّابِقِ ؟', options: [{id: 'A', text: 'فِي الطَّابَقِ السُّفْلِي (Di lantai bawah)'}, {id: 'B', text: 'فِي الطَّابَقِ الْعُلْوِيِّ (Di lantai atas)'}, {id: 'C', text: 'وَسَطَ الْمَدْرَسَةِ (Di tengah sekolah)'}, {id: 'D', text: 'تَحْتَ الْمَكْتَبَةِ (Di bawah perpustakaan)'}], answer: 'B' },
+            { id: 6, type: 'mc', text: 'حَلِيَّة : مَا اسْمُ مَدْرَسَتِكِ يَا نَادِينِي ؟\nنَادِيني : .... الْمَدْرَسَةُ الْمُتَوَسِّطَةُ الْحُكُومِيَّةُ 1 بِمَدِينَةِ مَا لَانْجِ.\nالْكَلِمَةُ الْمُنَاسِبَةُ لِتَكْمِيلِ الْحِوَارِ السَّابِقِ هِيَ ...', options: [{id: 'A', text: 'اسْمُهُ (Namanya - Lk)'}, {id: 'B', text: 'اسْمُهَا (Namanya - Pr)'}, {id: 'C', text: 'اسْمُكِ (Namamu - Pr)'}, {id: 'D', text: 'اسْمِي (Namaku)'}], answer: 'B' },
+            { id: 7, type: 'mc', text: 'حَلِيَّة : هَلِ الْمَرَافِقُ الْمَدْرَسِيَّةٌ فِي مَدْرَسَتِكِ كَثِيرَةٌ؟\nنَادِينِي : نَعَمْ، الْمَرَافِقُ الْمَدْرَسِيَّةُ فِي مَدْرَسَتِي ...\nالْكَلِمَةُ الْمُنَاسِبَةُ لِتَكْمِيلِ الْحِوَارِ هِيَ ...', options: [{id: 'A', text: 'قَلِيلَةٌ'}, {id: 'B', text: 'كَثِيرَةٌ'}, {id: 'C', text: 'صَغِيرَةٌ'}, {id: 'D', text: 'ضَيِّقَةٌ'}], answer: 'B' },
+            { id: 8, type: 'mc', text: 'Perhatikan ilustrasi fasilitas sekolah berikut!\n(Ilustrasi: Perpustakaan Sekolah yang Luas - مَكْتَبَةُ الْمَدْرَسَةِ الْوَاسِعَةُ)', image: 'https://placehold.co/600x400/0891b2/ffffff?text=GAMBAR_PERPUSTAKAAN_LUAS', options: [{id: 'A', text: 'هَذِهِ مَكْتَبَةٌ وَاسِعَةٌ'}, {id: 'B', text: 'هَذَا مَلْعَبٌ كَبِيرٌ'}, {id: 'C', text: 'هَذَا مَسْجِدٌ نَظِيفٌ'}, {id: 'D', text: 'هَذِهِ غُرْفَةُ الْحَارِسِ'}], answer: 'A' },
+            { id: 9, type: 'mc', text: 'Perhatikan denah posisi fasilitas berikut!\n[ مَسْجِدَ / Masjid  --  بِجَانِبِ / Di samping  --  مَكْتَبَة / Perpustakaan ]\nأَيْنَ يَقَعُ مَسْجِدُ الْمَدْرَسَةِ بِنَاءً عَلَى الصُّورَةِ؟', options: [{id: 'A', text: 'بِجَانِبِ الْمَكْتَبَةِ'}, {id: 'B', text: 'تَحْتَ الْمَكْتَبَةِ'}, {id: 'C', text: 'وَرَاءَ الْمَلْعَبِ'}, {id: 'D', text: 'فِي الطَّابَقِ الْعُلْوِيِّ'}], answer: 'A' },
+            { id: 10, type: 'mc', text: 'أَيُّ صُورَةٍ / بَيَانِ يَدُلُّ عَلَى كَلِمَةٍ "مَقْصَفُ"؟', options: [{id: 'A', text: 'Kantin Tempat Makan'}, {id: 'B', text: 'مَيْدَانُ (Lapangan Olahraga)'}, {id: 'C', text: 'غُرْفَةُ الصَّحَّةِ (Ruang Kesehatan / UKS)'}, {id: 'D', text: 'مَعْمَلٌ (Laboratorium IPA)'}], answer: 'A' },
+            { id: 11, type: 'mc', text: 'Perhatikan pernyataan tentang kedudukan kata Mubtada (مُبْتَدَأٌ - Subjek) dan Khabar (خَبَرٌ - Predikat) berikut:\n(1) Pada kalimat "الْفَصْلُ نَظِيفٌ" kata "الْفَصْلُ" berkedudukan sebagai Mubtada\'.\n(2) Pada kalimat "هَذِهِ مَكْتَبَةٌ" kata "هَذِهِ" berkedudukan sebagai Mubtada\' (Isim Isyarah).\n(3) Pada kalimat "الْمَسْجِدُ كَبِيرٌ" kata "كَبِيرٌ" berkedudukan sebagai Mubtada\'.\n(4) Pada kalimat "الْمَدْرَسَةُ وَاسِعَةٌ" kata "وَاسِعَةٌ" berkedudukan sebagai Khabar.\nPernyataan yang BENAR ditunjukkan oleh nomor...', options: [{id: 'A', text: '(1), (2), dan (3)'}, {id: 'B', text: '(1), (2), dan (4)'}, {id: 'C', text: '(2), (3), dan (4)'}, {id: 'D', text: '(1), (3), dan (4)'}], answer: 'B' },
+            { id: 12, type: 'mc', text: 'Perhatikan kesesuaian penggunaan Isim Isyarah (Kata Tunjuk) dan kata benda berikut:\n(1) هَذَا مَسْجِدٌ\n(2) هَذِهِ غُرْفَةٌ\n(3) ذَلِكَ مَكْتَبَةٌ\n(4) تِلْكَ حَدِيقَةٌ\nPasangan kata tunjuk dan kata benda yang TEPAT ditunjukkan oleh nomor...', options: [{id: 'A', text: '(1), (2), dan (3)'}, {id: 'B', text: '(1), (2), dan (4)'}, {id: 'C', text: '(2), (3), dan (4)'}, {id: 'D', text: '(1), (3), dan (4)'}], answer: 'B' },
+            { id: 13, type: 'mc', text: 'Perhatikan pasangan kata sifat dan lawan katanya (الْمُتَضَادَّات / Antonim) berikut:\n(1) صَغِيرٌ × كَبِيرٌ\n(2) نَظِيفٌ × مُتَّسِخٌ\n(3) قَرِيبٌ × طَوِيلٌ\n(4) كَسْلَانُ × نَشِيطٌ\nPasangan lawan kata yang BENAR ditunjukkan oleh nomor...', options: [{id: 'A', text: '(1), (2), dan (3)'}, {id: 'B', text: '(1), (2), dan (4)'}, {id: 'C', text: '(2), (3), dan (4)'}, {id: 'D', text: '(1), (3), dan (4)'}], answer: 'B' },
+            { id: 14, type: 'mc', text: '.... كِتَابٌ جَدِيدٌ\nIsim Isyarah (kata tunjuk dekat) yang tepat untuk melengkapi kata jenis mudzakkar "كِتَابٌ" adalah...', options: [{id: 'A', text: 'هَذَا'}, {id: 'B', text: 'هَذِهِ'}, {id: 'C', text: 'تِلْكَ'}, {id: 'D', text: 'هَؤُلَاءِ'}], answer: 'A' },
+            { id: 15, type: 'mc', text: '.... مَدْرَسَةٌ حُكُومِيَّةٌ\nIsim Isyarah (kata tunjuk dekat) yang tepat untuk kata jenis mu\'annats adalah...', options: [{id: 'A', text: 'هَذَا'}, {id: 'B', text: 'ذَلِكَ'}, {id: 'C', text: 'هَذِهِ'}, {id: 'D', text: 'هُوَ'}], answer: 'C' },
+            { id: 16, type: 'mc', text: 'فِي جُمْلَةِ "الْمَسْجِدُ كَبِيرٌ"، كَلِمَةُ "الْمَسْجِدُ" تُعْرَبُ ... وَكَلِمَةُ "كَبِيرٌ" تُعْرَبُ ...', options: [{id: 'A', text: 'مُبْتَدَأٌ - خَبَرٌ'}, {id: 'B', text: 'خَبَرٌ - مُبْتَدَأٌ'}, {id: 'C', text: 'صِفَةٌ - مَوْصُوفٌ'}, {id: 'D', text: 'فِعْلٌ - فَاعِلٌ'}], answer: 'A' },
+            { id: 17, type: 'mc', text: '"الْأُسْتَاذُ يَقِفُ ... الْفَصْلِ"\nالْكَلِمَةُ (ظَرْفُ الْمَكَانِ) الْمُنَاسِبَةُ لِتَكْمِيلِ الْجُمْلَةِ السَّابِقَةِ بِمَعْنَى (DI DEPAN) هِيَ ...', options: [{id: 'A', text: 'تَحْتَ'}, {id: 'B', text: 'أَمَامَ'}, {id: 'C', text: 'وَرَاءَ'}, {id: 'D', text: 'عَلَى'}], answer: 'B' },
+            { id: 18, type: 'mc', text: 'الْقَاعَةُ ... الْمَكْتَبَةِ\nKata keterangan tempat (Dhorof Makan) yang berarti "Di Bawah" untuk melengkapi kalimat di atas adalah...', options: [{id: 'A', text: 'تَحْتَ'}, {id: 'B', text: 'فَوْقَ'}, {id: 'C', text: 'أَمَامَ'}, {id: 'D', text: 'بَيْنَ'}], answer: 'A' },
+            { id: 19, type: 'mc', text: 'مَا التَّرْجَمَةُ الصَّحِيحَةُ لِلْكَلِمَةِ (Kamar Mandi / Toilet) فِي اللُّغَةِ الْعَرَبِيَّةِ ؟', options: [{id: 'A', text: 'مَيْدَانٌ'}, {id: 'B', text: 'حَمَّامٌ / مِرْحَاضٌ'}, {id: 'C', text: 'مَصْعَدٌ'}, {id: 'D', text: 'مَخْزَنٌ'}], answer: 'B' },
+            { id: 20, type: 'mc', text: 'هَذِهِ حَدِيقَةٌ ....\nKata sifat yang tepat untuk menyifati kata jenis mu\'annats "حَدِيقَةٌ" adalah....', options: [{id: 'A', text: 'جَمِيلٌ'}, {id: 'B', text: 'جَمِيلَةٌ'}, {id: 'C', text: 'كَبِيرٌ'}, {id: 'D', text: 'نَشِيطٌ'}], answer: 'B' },
+            { id: 21, type: 'mc', text: 'هَذَا مَيْدَانٌ ....\nالصِّفَةُ الْمُنَاسِبَةُ لِلْكَلِمَةِ الْمُذَكَّرَةِ (مَيْدَانٌ) فِي الْجُمْلَةِ السَّابِقَةِ هِيَ ...', options: [{id: 'A', text: 'وَاسِعٌ'}, {id: 'B', text: 'وَاسِعَةٌ'}, {id: 'C', text: 'جَمِيلَةٌ'}, {id: 'D', text: 'نَظِيفَةٌ'}], answer: 'A' },
+            { id: 22, type: 'mc', text: 'فِي جُمْلَةِ "فِي الْمَدْرَسَةِ مَرَافِقُ كَثِيرَةٌ"، الْفِقْرَةُ "فِي الْمَدْرَسَةِ" الَّتِي تَقَعُ فِي بِدَايَةِ الْجُمْلَةِ تُسَمَّى ...', options: [{id: 'A', text: 'خَبَرٌ مُقَدَّمٌ (Khabar yang didahulukan)'}, {id: 'B', text: 'مُبْتَدَأٌ مُؤَخَّرٌ (Mubtada\' yang diakhirkan)'}, {id: 'C', text: 'فَاعِلٌ (Subjek pelaku)'}, {id: 'D', text: 'مَفْعُولٌ (Objek penderita)'}], answer: 'A' },
+            { id: 23, type: 'mc', text: 'مَا هُوَ الْمُصْطَلَحُ بِاللُّغَةِ الْعَرَبِيَّةِ لِـ "Ruang Tata Usaha (TU)"؟', options: [{id: 'A', text: 'غُرْفَةُ الشُّؤُونِ الْإِدَارِيَّةِ'}, {id: 'B', text: 'غُرْفَةُ رَئِيسِ الْمَدْرَسَةِ'}, {id: 'C', text: 'غُرْفَةُ الْإِشْرَافِ'}, {id: 'D', text: 'غُرْفَةُ الْحَارِسِ'}], answer: 'A' },
+            { id: 24, type: 'mc', text: 'مَا مَعْنَى "الْمَدْرَسَةُ الْمُتَوَسِّطَةُ" فِي اللُّغَةِ الْإِنْدُونِيسِيَّةِ؟', options: [{id: 'A', text: 'Sekolah Dasar (SD / MI)'}, {id: 'B', text: 'Sekolah Menengah Pertama (SMP / MTs)'}, {id: 'C', text: 'Sekolah Menengah Atas (SMA / MA)'}, {id: 'D', text: 'Perguruan Tinggi'}], answer: 'B' },
+            { id: 25, type: 'mc', text: 'التَّرْجَمَةُ الصَّحِيحَةُ لِلْجُمْلَةِ "الْمَعْهَدُ بِجَانِبِ الْمَيْدَانِ، وَهُوَ مَعْهَدٌ جَدِيدٌ وَجَمِيلٌ" هِيَ ...', options: [{id: 'A', text: 'Ma\'had (asrama) itu di samping lapangan, ia adalah ma\'had yang baru dan indah.'}, {id: 'B', text: 'Lapangan itu di samping ma\'had, ia adalah lapangan yang luas dan bersih.'}, {id: 'C', text: 'Ma\'had itu di depan gedung sekolah yang lama.'}, {id: 'D', text: 'Ruang guru berada di samping lapangan yang indah.'}], answer: 'A' },
+            { 
+                id: 26, 
+                type: 'matching', 
+                text: 'BAGIAN II: SOAL MENJODOHKAN\nJodohkanlah pernyataan/istilah pada Kolom A dengan pilihan jawaban yang paling tepat pada Kolom B!',
+                premises: [
+                    { id: '1', text: 'Lawan kata (antonim) dari kata نَظِيفٌ (Bersih)' },
+                    { id: '2', text: 'Ruangan di sekolah untuk pelayanan kesehatan siswa (UKS)' },
+                    { id: '3', text: 'Isim Isyarah (Kata Tunjuk) jarak dekat untuk Mu\'annats (perempuan)' },
+                    { id: '4', text: 'Kata keterangan tempat (Dhorof Makan) yang berarti "Di antara"' },
+                    { id: '5', text: 'Istilah bahasa Arab untuk "Ruang Kepala Sekolah"' },
+                    { id: '6', text: 'Kata benda yang berada di awal kalimat nominal yang berfungsi sebagai Subjek' },
+                    { id: '7', text: 'Kata/frasa penjelas yang melengkapi Mubtada\' dan berfungsi sebagai Predikat' },
+                    { id: '8', text: 'Sebutan bahasa Arab untuk "Sekolah Menengah Pertama / Tsanawiyah Negeri"' },
+                    { id: '9', text: 'Fasilitas sekolah yang berfungsi sebagai tangga penghubung antar lantai' },
+                    { id: '10', text: 'Lawan kata (antonim) dari kata كَسْلَانُ (Malas)' }
+                ],
+                targets: [
+                    { id: 'A', text: 'غُرْفَةُ الصِّحَّةِ' },
+                    { id: 'B', text: 'مُتَّسِخٌ' },
+                    { id: 'C', text: 'هَذِهِ' },
+                    { id: 'D', text: 'بَيْنَ' },
+                    { id: 'E', text: 'غُرْفَةُ رَئِيسِ الْمَدْرَسَةِ' },
+                    { id: 'F', text: 'مُبْتَدَأٌ' },
+                    { id: 'G', text: 'خَبَرٌ' },
+                    { id: 'H', text: 'مَدْرَسَةٌ مُتَوَسِّطَةٌ حُكُومِيَّةٌ' },
+                    { id: 'I', text: 'سُلَّمٌ' },
+                    { id: 'J', text: 'نَشِيطٌ' }
+                ],
+                correctAnswers: {
+                    '1': 'B', '2': 'A', '3': 'C', '4': 'D', '5': 'E',
+                    '6': 'F', '7': 'G', '8': 'H', '9': 'I', '10': 'J'
+                }
+            }
+        ];
+
+        // ==========================================
+        // HELPERS
+        // ==========================================
+        const shuffleArray = (array) => [...array].sort(() => Math.random() - 0.5);
+        const containsArabic = (str) => /[\u0600-\u06FF]/.test(str);
+
+        // Komponen Ikon (SVG inline murni untuk stabilitas render React 18)
+        const Icon = ({ name, className }) => {
+            const icons = {
+                alert: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>,
+                check: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"></polyline></svg>,
+                clock: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>,
+                file: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            };
+            return icons[name] || null;
+        };
+
+        // Custom Modal (Definisi statis murni di luar scope re-render utama)
+        const CustomModal = ({ isOpen, title, text, btnText, onConfirm, isDanger }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md text-center transform scale-100 transition-transform">
+                        <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 ${isDanger ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                            <Icon name="alert" className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+                        <p className="text-gray-600 mb-6">{text}</p>
+                        <button onClick={onConfirm} className={`w-full py-3 px-4 text-white rounded-lg font-semibold transition-colors ${isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                            {btnText}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // KOMPONEN UTAMA (App)
+        // ==========================================
+        function App() {
+            const [view, setView] = React.useState('login'); // 'login', 'resume', 'exam', 'result'
+            const [student, setStudent] = React.useState({ nama: '', kelas: '', tanggal: new Date().toISOString().split('T')[0] });
+            const [questions, setQuestions] = React.useState([]);
+            const [answers, setAnswers] = React.useState({});
+            const [currentIdx, setCurrentIdx] = React.useState(0);
+            const [timeLeft, setTimeLeft] = React.useState(EXAM_CONFIG.durasiMenit * 60);
+            const [violations, setViolations] = React.useState(0);
+            const [scoreData, setScoreData] = React.useState(null);
+            const [loading, setLoading] = React.useState(false);
+            
+            // Modals state
+            const [modalState, setModalState] = React.useState({ open: false, title: '', text: '', type: '', action: null });
+
+            // Cek status tersimpan saat awal render
+            React.useEffect(() => {
+                const saved = localStorage.getItem(EXAM_CONFIG.storageKey);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.timeLeft > 0 && parsed.status !== 'finished') {
+                        setView('resume');
+                    }
+                }
+            }, []);
+
+            // Auto-Save Effect
+            React.useEffect(() => {
+                if (view === 'exam') {
+                    const saveData = {
+                        student, questions, answers, timeLeft, violations, status: 'ongoing'
+                    };
+                    localStorage.setItem(EXAM_CONFIG.storageKey, JSON.stringify(saveData));
+                }
+            }, [answers, timeLeft, violations, view, student, questions]);
+
+            // Timer Hitung Mundur
+            React.useEffect(() => {
+                if (view === 'exam' && timeLeft > 0) {
+                    const timerId = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
+                    return () => clearTimeout(timerId);
+                } else if (view === 'exam' && timeLeft <= 0) {
+                    handleAutoSubmit("Waktu Ujian Habis!");
+                }
+            }, [timeLeft, view]);
+
+            // Anti-Cheat: Cegah pindah tab & keluar fullscreen
+            React.useEffect(() => {
+                const handleVisibility = () => {
+                    if (document.visibilityState === 'hidden' && view === 'exam') triggerViolation();
+                };
+                const handleFullscreen = () => {
+                    if (!document.fullscreenElement && view === 'exam') triggerViolation();
+                };
+                
+                document.addEventListener("visibilitychange", handleVisibility);
+                document.addEventListener("fullscreenchange", handleFullscreen);
+                
+                return () => {
+                    document.removeEventListener("visibilitychange", handleVisibility);
+                    document.removeEventListener("fullscreenchange", handleFullscreen);
+                };
+            }, [view, violations]);
+
+            const triggerViolation = () => {
+                setViolations(v => {
+                    const newV = v + 1;
+                    if (newV === 1) {
+                        setModalState({
+                            open: true, title: 'PERINGATAN PELANGGARAN!', type: 'violation',
+                            text: 'Anda terdeteksi keluar dari layar ujian. Ini adalah peringatan pertama. Jika diulangi, ujian akan dihentikan dan dikumpulkan otomatis.',
+                            action: () => requestFullscreen()
+                        });
+                    } else if (newV >= 2) {
+                        handleAutoSubmit("Pelanggaran Berulang (Sistem Otomatis)");
+                    }
+                    return newV;
+                });
+            };
+
+            const requestFullscreen = () => {
+                setModalState({ open: false });
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(err => console.log(err));
+                }
+            };
+
+            const startNewExam = (e) => {
+                e.preventDefault();
+                if (!student.nama || !student.kelas) return;
+                
+                // Acak urutan soal dan urutan opsi pilihan ganda
+                let shufQuestions = shuffleArray(rawQuestionsData).map(q => {
+                    if (q.type === 'mc') return { ...q, options: shuffleArray(q.options) };
+                    return q; // Soal menjodohkan targetnya tetap terurut agar rapi di dropdown
+                });
+
+                setQuestions(shufQuestions);
+                setView('exam');
+                requestFullscreen();
+            };
+
+            const resumeExam = (reset) => {
+                if (reset) {
+                    localStorage.removeItem(EXAM_CONFIG.storageKey);
+                    setView('login');
+                } else {
+                    const saved = JSON.parse(localStorage.getItem(EXAM_CONFIG.storageKey));
+                    setStudent(saved.student);
+                    setQuestions(saved.questions);
+                    setAnswers(saved.answers);
+                    setTimeLeft(saved.timeLeft);
+                    setViolations(saved.violations);
+                    setView('exam');
+                    requestFullscreen();
+                }
+            };
+
+            const handleMCAnswer = (qId, optionId) => {
+                setAnswers(prev => ({ ...prev, [qId]: optionId }));
+            };
+
+            const handleMatchingAnswer = (qId, premiseId, targetId) => {
+                setAnswers(prev => ({
+                    ...prev,
+                    [qId]: { ...(prev[qId] || {}), [premiseId]: targetId }
+                }));
+            };
+
+            const calculateGrade = () => {
+                let rincianArr = [];
+                let skorPilihanGanda = 0;
+                let skorMenjodohkan = 0;
+
+                rawQuestionsData.forEach((q, originalIdx) => {
+                    const qNum = originalIdx + 1;
+                    const ans = answers[q.id];
+
+                    if (q.type === 'mc') {
+                        if (!ans) {
+                            rincianArr.push(`Soal ${qNum}: KOSONG`);
+                        } else if (ans === q.answer) {
+                            rincianArr.push(`Soal ${qNum}: BENAR`);
+                            skorPilihanGanda += 3; // 25 soal x 3 poin = 75 poin maksimal
+                        } else {
+                            rincianArr.push(`Soal ${qNum}: SALAH (Pilih: ${ans}, Kunci: ${q.answer})`);
+                        }
+                    } else if (q.type === 'matching') {
+                        let matchingDetails = [];
+                        let correctCount = 0;
+                        q.premises.forEach(p => {
+                            const userAns = ans ? ans[p.id] : null;
+                            const correctAns = q.correctAnswers[p.id];
+                            if (!userAns) {
+                                matchingDetails.push(`Item ${p.id}: KOSONG`);
+                            } else if (userAns === correctAns) {
+                                matchingDetails.push(`Item ${p.id}: BENAR`);
+                                correctCount += 1;
+                            } else {
+                                matchingDetails.push(`Item ${p.id}: SALAH (Pilih: ${userAns}, Kunci: ${correctAns})`);
+                            }
+                        });
+                        skorMenjodohkan += correctCount * 2.5; // 10 pasang x 2.5 poin = 25 poin maksimal
+                        rincianArr.push(`Soal ${qNum} (Menjodohkan): ${correctCount}/${q.premises.length} BENAR [${matchingDetails.join(', ')}]`);
+                    }
+                });
+
+                const totalSkor = Math.round(skorPilihanGanda + skorMenjodohkan);
+                const rincianJawaban = rincianArr.join(" | ");
+                
+                return { totalSkor, rincianJawaban };
+            };
+
+            const handleAutoSubmit = async (keterangan) => {
+                setLoading(true);
+                const result = calculateGrade();
+                
+                const payload = {
+                    nama: student.nama,
+                    kelas: student.kelas,
+                    tanggal: student.tanggal,
+                    skor: result.totalSkor,
+                    pelanggaran: violations,
+                    keterangan: keterangan,
+                    rincianJawaban: result.rincianJawaban
+                };
+
+                try {
+                    await fetch(GOOGLE_SHEETS_WEB_APP_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch (e) { console.error("Error submitting data", e); }
+
+                localStorage.removeItem(EXAM_CONFIG.storageKey);
+                setScoreData(result.totalSkor);
+                if (document.fullscreenElement) document.exitFullscreen();
+                setView('result');
+                setLoading(false);
+            };
+
+            const confirmSubmit = () => {
+                setModalState({
+                    open: true, title: 'Kumpulkan Ujian?', type: 'confirm',
+                    text: 'Pastikan seluruh jawaban Anda sudah terisi dengan benar. Anda tidak dapat kembali setelah ini.',
+                    action: () => { setModalState({open: false}); handleAutoSubmit("Selesai Normal"); }
+                });
+            };
+
+            const formatTime = (sec) => {
+                const m = Math.floor(sec / 60).toString().padStart(2, '0');
+                const s = (sec % 60).toString().padStart(2, '0');
+                return `${m}:${s}`;
+            };
+
+            // ==========================================
+            // TAMPILAN: HALAMAN LOGIN
+            // ==========================================
+            if (view === 'login') {
+                return (
+                    <div className="flex items-center justify-center min-h-screen p-4">
+                        <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md transform transition-all hover:scale-[1.01]">
+                            <div className="text-center mb-8">
+                                <div className="bg-blue-100 text-blue-600 p-4 rounded-full inline-block mb-4 shadow-inner">
+                                    <Icon name="file" className="w-10 h-10" />
+                                </div>
+                                <h1 className="text-3xl font-extrabold text-gray-800">{EXAM_CONFIG.mapel}</h1>
+                                <p className="text-sm font-semibold text-gray-500 mt-1 uppercase tracking-wider">{EXAM_CONFIG.jenisUjian}</p>
+                                <p className="text-xs text-blue-500 font-bold mt-1 bg-blue-50 py-1 px-3 rounded-full inline-block">Kelas {EXAM_CONFIG.kelas} • {EXAM_CONFIG.durasiMenit} Menit</p>
+                            </div>
+                            <form onSubmit={startNewExam} className="space-y-5">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Nama Lengkap</label>
+                                    <input type="text" required className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-shadow" value={student.nama} onChange={e => setStudent({...student, nama: e.target.value})} placeholder="Masukkan nama Anda..." />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Kelas</label>
+                                    <input type="text" required className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-shadow" value={student.kelas} onChange={e => setStudent({...student, kelas: e.target.value})} placeholder="Contoh: VIII-A" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Tanggal Ujian</label>
+                                    <input type="date" required className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-600 outline-none" value={student.tanggal} readOnly />
+                                </div>
+                                <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold py-3 px-4 rounded-xl hover:from-blue-700 hover:to-cyan-700 shadow-lg transform transition active:scale-95 text-lg">
+                                    Mulai Ujian
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ==========================================
+            // TAMPILAN: HALAMAN RESUME
+            // ==========================================
+            if (view === 'resume') {
+                return (
+                    <div className="flex items-center justify-center min-h-screen p-4">
+                        <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md text-center border-t-8 border-yellow-400">
+                            <Icon name="alert" className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">Sesi Tersimpan Ditemukan!</h2>
+                            <p className="text-gray-600 mb-6">Anda memiliki sesi ujian yang belum selesai secara tidak sengaja tertutup.</p>
+                            <div className="space-y-3">
+                                <button onClick={() => resumeExam(false)} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 shadow-md">Lanjutkan Ujian</button>
+                                <button onClick={() => resumeExam(true)} className="w-full bg-red-100 text-red-600 font-bold py-3 rounded-xl hover:bg-red-200">Mulai Ulang (Hapus Data)</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ==========================================
+            // TAMPILAN: HALAMAN HASIL
+            // ==========================================
+            if (view === 'result') {
+                return (
+                    <div className="flex items-center justify-center min-h-screen p-4">
+                        <div className="bg-white p-10 rounded-2xl shadow-2xl text-center max-w-md w-full">
+                            <div className="bg-green-100 text-green-600 p-5 rounded-full inline-block mb-6 shadow-inner">
+                                <Icon name="check" className="w-12 h-12" />
+                            </div>
+                            <h2 className="text-3xl font-black text-gray-800 mb-2">Ujian Selesai!</h2>
+                            <p className="text-gray-500 mb-6 font-medium">Data jawaban Anda telah berhasil dikirim ke server.</p>
+                            <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 mb-6 shadow-sm">
+                                <p className="text-sm text-gray-500 font-bold uppercase mb-1">Skor Akhir</p>
+                                <p className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">{scoreData}</p>
+                            </div>
+                            <p className="text-xs text-gray-400 font-medium">Terima kasih atas partisipasi Anda.</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ==========================================
+            // TAMPILAN: HALAMAN UJIAN (EXAM UI)
+            // ==========================================
+            const currentQ = questions[currentIdx];
+            const originalIndex = rawQuestionsData.findIndex(q => q.id === currentQ.id) + 1;
+            
+            return (
+                <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row">
+                    
+                    {/* AREA UTAMA KIRI: SOAL & OPSI */}
+                    <div className="flex-1 flex flex-col h-screen overflow-hidden">
+                        {/* Header Atas */}
+                        <header className="bg-white shadow-sm px-6 py-4 flex justify-between items-center z-10 shrink-0">
+                            <div>
+                                <h2 className="font-extrabold text-xl text-gray-800 leading-tight">{EXAM_CONFIG.mapel}</h2>
+                                <p className="text-xs text-gray-500 font-bold bg-gray-100 inline-block px-2 py-1 rounded mt-1">{student.nama} - Kelas {student.kelas}</p>
+                            </div>
+                            <div className="flex items-center space-x-3 bg-red-50 px-4 py-2 rounded-lg border border-red-100">
+                                <Icon name="clock" className="text-red-500 w-5 h-5 animate-pulse" />
+                                <span className={`font-mono text-xl font-bold ${timeLeft < 300 ? 'text-red-600' : 'text-gray-800'}`}>
+                                    {formatTime(timeLeft)}
+                                </span>
+                            </div>
+                        </header>
+
+                        {/* Konten Soal Scrollable */}
+                        <main className="flex-1 overflow-y-auto p-6 md:p-10 relative">
+                            {loading && (
+                                <div className="absolute inset-0 bg-white/80 backdrop-blur flex items-center justify-center z-50">
+                                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
+                                </div>
+                            )}
+                            
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 max-w-4xl mx-auto">
+                                <div className="flex justify-between items-start mb-6 pb-4 border-b border-gray-100">
+                                    <span className="bg-blue-600 text-white font-bold px-4 py-1 rounded-full text-sm shadow-sm">Soal Nomor {originalIndex}</span>
+                                    <span className="text-sm font-bold text-gray-400 bg-gray-100 px-3 py-1 rounded-full uppercase tracking-wider">{currentQ.type === 'mc' ? 'Pilihan Ganda' : 'Menjodohkan'}</span>
+                                </div>
+
+                                {/* Teks Soal */}
+                                <div className="text-lg text-gray-800 mb-8 whitespace-pre-wrap">
+                                    {/* Gunakan RTL dan Font Arab jika teks soal mengandung huruf Arab */}
+                                    <div className={containsArabic(currentQ.text) ? "font-arabic text-right text-3xl leading-loose font-bold text-slate-800" : "font-medium"}>
+                                        {currentQ.text}
+                                    </div>
+                                    
+                                    {currentQ.image && (
+                                        <div className="mt-6">
+                                            <img src={currentQ.image} alt="Ilustrasi Soal" className="max-w-full h-auto rounded-xl shadow-md border border-gray-200" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Render Opsi (MC / Matching) */}
+                                {currentQ.type === 'mc' && (
+                                    <div className="space-y-4">
+                                        {currentQ.options.map(opt => {
+                                            const isSelected = answers[currentQ.id] === opt.id;
+                                            const isArabicOpt = containsArabic(opt.text);
+                                            return (
+                                                <label key={opt.id} className={`flex items-center p-5 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-gray-50'}`}>
+                                                    <input type="radio" name={`q_${currentQ.id}`} className="hidden" checked={isSelected} onChange={() => handleMCAnswer(currentQ.id, opt.id)} />
+                                                    <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 mr-5 shrink-0 ${isSelected ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-400'}`}>
+                                                        <span className="text-sm font-bold">{opt.id}</span>
+                                                    </div>
+                                                    <div className="flex-1 w-full">
+                                                        {opt.image && <img src={opt.image} alt={`Opsi ${opt.id}`} className="max-h-32 object-contain mb-3 rounded-md" />}
+                                                        <div className={isArabicOpt ? "font-arabic text-right text-2xl leading-loose" : "text-lg font-medium text-gray-700"}>
+                                                            {opt.text}
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {currentQ.type === 'matching' && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                        {currentQ.premises.map(premise => {
+                                            const selectedTarget = answers[currentQ.id] ? answers[currentQ.id][premise.id] : '';
+                                            return (
+                                                <div key={premise.id} className="flex flex-col p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+                                                    <div className="flex-1 mb-3">
+                                                        <span className="inline-block bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded mr-2 align-top">{premise.id}</span>
+                                                        <span className={containsArabic(premise.text) ? "font-arabic text-right text-xl leading-loose align-middle" : "text-gray-700 font-medium align-middle"}>
+                                                            {premise.text}
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full">
+                                                        <select 
+                                                            className="w-full p-3 border-2 border-gray-300 rounded-lg bg-white focus:ring-0 focus:border-blue-500 outline-none transition-colors font-medium text-gray-700"
+                                                            value={selectedTarget || ''}
+                                                            onChange={(e) => handleMatchingAnswer(currentQ.id, premise.id, e.target.value)}
+                                                        >
+                                                            <option value="">-- Pilih Pasangan Jawaban --</option>
+                                                            {currentQ.targets.map(t => (
+                                                                <option key={t.id} value={t.id}>
+                                                                    {t.id}. {t.text}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </main>
+
+                        {/* Footer Navigasi Bawah */}
+                        <footer className="bg-white border-t border-gray-200 p-4 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                            <div className="max-w-4xl mx-auto flex justify-between items-center">
+                                <button 
+                                    onClick={() => setCurrentIdx(prev => Math.max(0, prev - 1))}
+                                    disabled={currentIdx === 0}
+                                    className="px-6 py-3 rounded-lg font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    &larr; Sebelumnya
+                                </button>
+                                
+                                {currentIdx < questions.length - 1 ? (
+                                    <button 
+                                        onClick={() => setCurrentIdx(prev => Math.min(questions.length - 1, prev + 1))}
+                                        className="px-6 py-3 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md transition-colors"
+                                    >
+                                        Selanjutnya &rarr;
+                                    </button>
+                                ) : (
+                                    <button 
+                                        onClick={confirmSubmit}
+                                        className="px-8 py-3 rounded-lg font-bold text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg transform transition active:scale-95"
+                                    >
+                                        Selesai & Kumpulkan
+                                    </button>
+                                )}
+                            </div>
+                        </footer>
+                    </div>
+
+                    {/* AREA SIDEBAR KANAN: NAVIGASI NOMOR SOAL */}
+                    <aside className="w-full md:w-80 bg-white border-l border-gray-200 h-auto md:h-screen flex flex-col shrink-0">
+                        <div className="p-4 bg-gray-50 border-b border-gray-200 text-center shadow-sm">
+                            <h3 className="font-black text-gray-800 tracking-wide">NAVIGASI SOAL</h3>
+                            <p className="text-xs text-gray-500 mt-1 font-semibold">Telah dijawab: <span className="text-green-600 font-bold">{Object.keys(answers).length}</span> / {questions.length}</p>
+                        </div>
+                        <div className="p-4 flex-1 overflow-y-auto">
+                            <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
+                                {questions.map((q, idx) => {
+                                    const origIdx = rawQuestionsData.findIndex(orig => orig.id === q.id) + 1;
+                                    
+                                    // Cek apakah soal sudah terjawab
+                                    let isAnswered = false;
+                                    if (q.type === 'mc') {
+                                        isAnswered = !!answers[q.id];
+                                    } else if (q.type === 'matching') {
+                                        const userAns = answers[q.id];
+                                        // Cek apakah semua premise di matching sudah terisi
+                                        isAnswered = userAns && Object.keys(userAns).length === q.premises.length;
+                                    }
+
+                                    const isActive = idx === currentIdx;
+
+                                    return (
+                                        <button
+                                            key={q.id}
+                                            onClick={() => setCurrentIdx(idx)}
+                                            className={`
+                                                relative w-full aspect-square flex items-center justify-center rounded-lg font-bold text-sm transition-all
+                                                ${isAnswered ? 'bg-green-500 text-white shadow-sm' : 'bg-white border-2 border-gray-200 text-gray-600 hover:border-gray-300'}
+                                                ${isActive ? 'ring-4 ring-blue-300 ring-offset-1 scale-105 z-10' : ''}
+                                            `}
+                                        >
+                                            {origIdx}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </aside>
+                    
+                    {/* Render Modal secara terisolasi tanpa memicu flickering pada main element saat timer tick */}
+                    <CustomModal 
+                        isOpen={modalState.open}
+                        title={modalState.title}
+                        text={modalState.text}
+                        type={modalState.type}
+                        isDanger={modalState.type === 'violation'}
+                        btnText="Mengerti & Lanjutkan"
+                        onConfirm={() => {
+                            if(modalState.action) modalState.action();
+                            else setModalState({open: false});
+                        }}
+                    />
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
